@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<title>Päijänteen vedenkorkeus</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --bg:#e9f0f3;--bg-grad-1:#eef4f6;--bg-grad-2:#dde9ee;
+  --surface:#ffffff;--surface-2:#f4f8fa;
+  --ink:#0e2a33;--ink-2:#3a555f;--muted:#6a8593;
+  --line:#d7e3e8;--line-strong:#c2d3da;
+  --accent:#0B5C8A;--accent-2:#C77D0A;
+  --mean-line:#0B5C8A;--band-50:rgba(11,92,138,.30);--band-90:rgba(11,92,138,.13);
+  --obs:#083b5c;--flood:#C0392B;--record:#B07A16;--neutral-ref:#5a7681;--good:#1a8a6b;
+  --evap:#8a6d3b;--temp:#C15B3C;--temp-band:rgba(193,91,60,.16);
+  --shadow:0 1px 2px rgba(14,42,51,.06),0 12px 34px -18px rgba(14,42,51,.28);
+  --shadow-sm:0 1px 2px rgba(14,42,51,.06),0 6px 18px -12px rgba(14,42,51,.22);
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg:#0c191f;--bg-grad-1:#0e1c23;--bg-grad-2:#0a151a;
+    --surface:#122129;--surface-2:#16272f;
+    --ink:#e9f2f5;--ink-2:#b3cad3;--muted:#7f9aa5;
+    --line:#25404b;--line-strong:#315160;
+    --accent:#3AA0D8;--accent-2:#d79a3f;
+    --mean-line:#4aa8dd;--band-50:rgba(74,168,221,.30);--band-90:rgba(74,168,221,.13);
+    --obs:#7cc4ea;--flood:#E4675A;--record:#D6A24A;--neutral-ref:#89a4af;--good:#3fb894;
+    --evap:#c79a5a;--temp:#E8825C;--temp-band:rgba(232,130,92,.17);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -20px rgba(0,0,0,.7);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.4),0 8px 20px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c191f;--bg-grad-1:#0e1c23;--bg-grad-2:#0a151a;
+  --surface:#122129;--surface-2:#16272f;
+  --ink:#e9f2f5;--ink-2:#b3cad3;--muted:#7f9aa5;
+  --line:#25404b;--line-strong:#315160;
+  --accent:#3AA0D8;--accent-2:#d79a3f;
+  --mean-line:#4aa8dd;--band-50:rgba(74,168,221,.30);--band-90:rgba(74,168,221,.13);
+  --obs:#7cc4ea;--flood:#E4675A;--record:#D6A24A;--neutral-ref:#89a4af;--good:#3fb894;
+  --evap:#c79a5a;--temp:#E8825C;--temp-band:rgba(232,130,92,.17);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -20px rgba(0,0,0,.7);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4),0 8px 20px -14px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{margin:0;
+  background:radial-gradient(1200px 600px at 15% -8%,var(--bg-grad-1),transparent 60%),
+    radial-gradient(1000px 700px at 100% 0%,var(--bg-grad-2),transparent 55%),var(--bg);
+  color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  line-height:1.6;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1060px;margin:0 auto;padding:0 22px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0 8px}
+.brandmark{display:flex;align-items:center;gap:11px;font-weight:600;letter-spacing:.02em}
+.brandmark .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,var(--accent),#0a3f63);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+:root[data-theme="dark"] .brandmark .dot{background:linear-gradient(150deg,#3AA0D8,#12455f)}
+.brandmark small{display:block;font-weight:500;color:var(--muted);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
+.theme-toggle{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);
+  padding:7px 12px;border-radius:999px;font:inherit;font-size:13px;cursor:pointer;box-shadow:var(--shadow-sm)}
+.theme-toggle:hover{border-color:var(--accent)}
+.theme-toggle svg{width:15px;height:15px}
+
+.hero{padding:26px 0 8px}
+.eyebrow{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:14px}
+h1{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:clamp(2.2rem,5.2vw,3.8rem);line-height:1.03;letter-spacing:-.015em;margin:0 0 14px;text-wrap:balance;color:var(--ink)}
+h1 .accentword{font-style:italic;color:var(--accent)}
+.lede{font-size:clamp(1.02rem,1.7vw,1.2rem);color:var(--ink-2);max-width:66ch;margin:0}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:end;margin-top:26px}
+@media(max-width:760px){.hero-grid{grid-template-columns:1fr;gap:20px}}
+.now-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 24px;box-shadow:var(--shadow)}
+.now-card .k{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.now-value{display:flex;align-items:baseline;gap:8px;margin:6px 0 2px}
+.now-value b{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:3.4rem;line-height:1;letter-spacing:-.02em}
+.now-value span{font-size:1.05rem;color:var(--muted);font-weight:500}
+.status-pill{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:600;
+  background:color-mix(in srgb,var(--flood) 12%,transparent);color:var(--flood);border:1px solid color-mix(in srgb,var(--flood) 30%,transparent)}
+.status-pill .glyph{width:8px;height:8px;border-radius:50%;background:var(--flood)}
+.now-sub{margin-top:14px;font-size:13.5px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:12px}
+.now-sub .mono{color:var(--ink)}
+
+.strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:30px 0 8px}
+@media(max-width:760px){.strip{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 15px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.tile.lead{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:-2px}
+.tile .t-k{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.03em}
+.tile .t-v{font-family:"Fraunces",Georgia,serif;font-size:1.72rem;font-weight:600;margin-top:4px;letter-spacing:-.01em}
+.tile .t-v small{font-size:.72rem;color:var(--muted);font-weight:500;font-family:"Public Sans",sans-serif}
+.tile .t-d{font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.tile .spark{position:absolute;right:10px;top:12px;font-size:11px;font-weight:600}
+.up{color:var(--good)}.flat{color:var(--muted)}.down{color:var(--flood)}
+
+section{margin:46px 0}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:6px;flex-wrap:wrap}
+.sec-title{font-family:"Fraunces",Georgia,serif;font-size:1.7rem;font-weight:600;letter-spacing:-.01em;margin:0}
+.sec-note{color:var(--muted);font-size:13.5px;max-width:58ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:20px 20px 16px;margin-top:16px}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink-2);
+  padding:6px 12px;border-radius:999px;font:inherit;font-size:12.5px;cursor:pointer;user-select:none;transition:.15s}
+.chip .sw{width:11px;height:11px;border-radius:3px}
+.chip[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#08131a}
+.chip[aria-pressed="true"] .sw{outline:2px solid rgba(255,255,255,.5)}
+.chip:hover{border-color:var(--accent)}
+
+.chart-wrap{position:relative;width:100%}
+svg.chart{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
+.legend{display:flex;flex-wrap:wrap;gap:15px;margin-top:8px;font-size:12.5px;color:var(--ink-2)}
+.legend .li{display:inline-flex;align-items:center;gap:7px}
+.legend .swatch{width:16px;height:10px;border-radius:3px}
+.legend .swatch.line{height:0;border-top:2.5px solid var(--mean-line);width:18px}
+.legend .swatch.dash{height:0;border-top:2px dashed var(--flood);width:18px}
+
+.tt{position:absolute;pointer-events:none;z-index:8;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;
+  box-shadow:var(--shadow);padding:10px 12px;font-size:12.5px;min-width:150px;opacity:0;transform:translateY(4px);transition:opacity .12s}
+.tt.on{opacity:1;transform:translateY(0)}
+.tt .tt-date{font-weight:700;color:var(--ink);margin-bottom:6px;font-size:12.5px}
+.tt .tt-row{display:flex;justify-content:space-between;gap:14px;color:var(--ink-2)}
+.tt .tt-row b{color:var(--ink);font-weight:600}
+.tt .tt-mean{color:var(--accent);font-weight:700}
+
+.gauge-layout{display:grid;grid-template-columns:280px 1fr;gap:8px;align-items:stretch}
+@media(max-width:680px){.gauge-layout{grid-template-columns:1fr}}
+.gauge-notes{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:6px 6px 6px 14px}
+.gnote{border-left:3px solid var(--line-strong);padding:2px 0 2px 14px}
+.gnote.hi{border-color:var(--flood)}.gnote.mid{border-color:var(--record)}.gnote.now{border-color:var(--accent)}
+.gnote .g-k{font-weight:600;font-size:13.5px}
+.gnote .g-v{font-size:12.5px;color:var(--ink-2)}
+
+/* Water balance */
+.balance-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:stretch}
+@media(max-width:820px){.balance-grid{grid-template-columns:1fr}}
+.wb-diagram{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-sm);padding:14px}
+.wb-eq{margin-top:6px;text-align:center;font-size:12.5px;color:var(--ink-2);padding:0 8px 8px}
+.wb-eq b{color:var(--ink)}
+.wb-eq .plus{color:var(--good);font-weight:700}
+.wb-eq .minus{color:var(--flood);font-weight:700}
+.wb-svg .lake{fill:var(--accent);opacity:.9}
+.wb-svg .lake-2{fill:var(--accent);opacity:.35}
+.wb-svg .ground{fill:var(--surface-2);stroke:var(--line);stroke-width:1}
+.wb-svg .arr-in{stroke:var(--accent);fill:var(--accent)}
+.wb-svg .arr-out{stroke:var(--accent-2);fill:var(--accent-2)}
+.wb-svg .arr-rain{stroke:var(--accent);fill:var(--accent);opacity:.65}
+.wb-svg .arr-evap{stroke:var(--evap);fill:var(--evap)}
+.wb-svg .wb-t{font-family:"Public Sans",sans-serif;font-size:12px;font-weight:600}
+.wb-svg .wb-t.in{fill:var(--accent)}
+.wb-svg .wb-t.out{fill:var(--accent-2)}
+.wb-svg .wb-t.evap{fill:var(--evap)}
+.wb-svg .wb-s{font-size:10px;fill:var(--muted);font-weight:500}
+.wb-svg .dam{fill:var(--ink-2)}
+
+.factors{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.factors{grid-template-columns:1fr}}
+.factor{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow-sm);position:relative;padding-left:16px}
+.factor::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:4px;background:var(--fc,var(--accent))}
+.factor h5{margin:0 0 3px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+.factor .fv{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink);font-weight:600}
+.factor p{margin:4px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:620px){.cmp{grid-template-columns:1fr}}
+.stationcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 18px 16px;box-shadow:var(--shadow-sm);position:relative}
+.stationcard::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:4px;border-radius:4px;background:var(--st)}
+.stationcard h4{margin:0 0 2px;font-family:"Fraunces",Georgia,serif;font-size:1.28rem;font-weight:600;padding-left:10px}
+.stationcard .sc-sub{color:var(--muted);font-size:12px;padding-left:10px;margin-bottom:12px}
+.scrow{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0 7px 10px;border-top:1px dashed var(--line)}
+.scrow .lab{font-size:13px;color:var(--ink-2)}
+.scrow .val{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-weight:500;color:var(--ink)}
+.scrow.big .val{font-size:1.35rem;font-weight:600}
+
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:760px){.facts{grid-template-columns:repeat(2,1fr)}}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow-sm)}
+.fact .f-v{font-family:"Fraunces",Georgia,serif;font-size:1.85rem;font-weight:600;line-height:1;letter-spacing:-.01em}
+.fact .f-v small{font-size:.6rem;color:var(--muted);font-weight:500;font-family:"Public Sans",sans-serif}
+.fact .f-k{font-size:12.5px;color:var(--ink-2);margin-top:8px}
+.context-copy{max-width:66ch;color:var(--ink-2);font-size:15px;margin:18px 0 0}
+.context-copy strong{color:var(--ink);font-weight:600}
+
+.table-toggle{margin-top:14px}
+.tbl-wrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+thead th{background:var(--surface-2);color:var(--ink-2);font-weight:600;position:sticky;top:0}
+tbody td{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink)}
+tbody tr:last-child td{border-bottom:none}
+tbody td:first-child{font-family:"Public Sans",sans-serif;color:var(--ink-2)}
+
+footer{margin:52px 0 40px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+footer a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+footer a:hover{border-bottom-color:var(--accent)}
+.disclaimer{margin-top:10px;line-height:1.55}
+
+/* hero water background */
+.hero{position:relative;overflow:hidden;padding:0;border-radius:0 0 26px 26px;margin-top:6px}
+.hero-water{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block}
+.hero-inner{position:relative;z-index:1;padding:34px 26px 30px}
+.hero-inner .eyebrow{color:var(--accent)}
+:root[data-theme="dark"] .hero-inner .lede,:root:not([data-theme="light"]) .hero-inner .lede{color:var(--ink)}
+.hero-inner h1,.hero-inner .lede{text-shadow:0 1px 12px color-mix(in srgb,var(--surface) 70%,transparent)}
+
+/* lead block: graph up, tiles right */
+.lead{margin-top:20px}
+.lead-grid{display:grid;grid-template-columns:1.72fr 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.lead-grid{grid-template-columns:1fr}}
+.chart-panel{margin-top:0}
+.side{display:flex;flex-direction:column;gap:11px}
+.side .now-card{padding:18px 18px}
+.side .now-value b{font-size:2.9rem}
+.side .now-sub{font-size:12.5px}
+.side-tiles{display:flex;flex-direction:column;gap:10px}
+.side-tiles .tile{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px}
+.side-tiles .tile .t-left .t-k{font-size:11.5px;color:var(--muted);font-weight:600}
+.side-tiles .tile .t-left .t-d{font-size:11px;color:var(--ink-2);margin-top:1px}
+.side-tiles .tile .t-v{font-family:"Fraunces",Georgia,serif;font-size:1.5rem;font-weight:600;margin:0;letter-spacing:-.01em}
+.side-tiles .tile .t-v small{font-size:.62rem;color:var(--muted);font-weight:500;font-family:"Public Sans",sans-serif}
+.side-tiles .tile.lead-tile{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:-2px}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brandmark">
+      <span class="dot" aria-hidden="true"></span>
+      <span>Päijänne&nbsp;Watch<small>Kalkkisten vedenkorkeusmittari</small></span>
+    </div>
+    <button class="theme-toggle" id="themeBtn" aria-label="Vaihda väriteema">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      <span id="themeLabel">Tumma</span>
+    </button>
+  </div>
+
+  <header class="hero">
+    <canvas id="heroWater" class="hero-water" aria-hidden="true"></canvas>
+    <div class="hero-inner">
+      <div class="eyebrow">Suomi · Kymijoen vesistö · Hydrologia</div>
+      <h1>Päijänteen vedenkorkeus</h1>
+      <p class="lede">Suomen toiseksi suurin järvi — ja pääkaupunkiseudun juomaveden lähde — on loppukesällä 2026 poikkeuksellisen matalalla, lähellä ajankohdan alinta mitattua tasoa. Seuraa pinnan tasoa, sen historiaa, siihen vaikuttavia tekijöitä ja ennustetta.</p>
+    </div>
+  </header>
+
+  <!-- LEAD: graph up + tiles right -->
+  <section class="lead">
+    <div class="lead-grid">
+      <div class="panel chart-panel">
+        <div class="sec-head"><div>
+          <h2 class="sec-title" style="font-size:1.45rem">Havaittu vedenkorkeus 2023–2026</h2>
+          <p class="sec-note">Kuukauden alun havainnot Kalkkisten asteikolta. Vie kursori tai kosketa käyrää. Vaakaviivat ovat vertailutasoja 1970–2025.</p>
+        </div></div>
+        <div class="controls" id="histControls">
+          <button class="chip" data-toggle="hrefs" aria-pressed="true"><span class="sw" style="background:var(--flood)"></span>Vertailutasot</button>
+          <button class="chip" data-toggle="hann" aria-pressed="true"><span class="sw" style="background:var(--record)"></span>Merkinnät</button>
+        </div>
+        <div class="chart-wrap" id="histWrap">
+          <svg class="chart" id="histChart" viewBox="0 0 920 400" role="img" aria-label="Päijänteen havaittu vedenkorkeus 2023–2026"></svg>
+          <div class="tt" id="histTT"></div>
+        </div>
+        <div class="legend">
+          <span class="li"><span class="swatch line"></span>Havaittu vedenkorkeus (kk:n alku)</span>
+          <span class="li"><span class="swatch dash"></span>Vertailutasot</span>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="now-card">
+          <div class="k">Vedenkorkeus · 24.8.2026</div>
+          <div class="now-value"><b class="num">78,05</b><span>m (NN+)</span></div>
+          <div class="status-pill"><span class="glyph"></span>Matalan veden aikaa · 0,60 m alle vuosimaksimin</div>
+          <div class="now-sub">Keskim. vuosimaksimi <span class="mono">78,65 m</span>, tulvaraja <span class="mono">78,80 m</span>. Taso on vain 2 cm yli alimman mitatun vuosihuipun (<span class="mono">78,03 m</span>).</div>
+        </div>
+        <div class="side-tiles">
+          <div class="tile lead-tile"><div class="t-left"><div class="t-k">Nyt · 24.8.</div><div class="t-d">Havaittu</div></div><div class="t-v num">78,05<small> m</small></div></div>
+          <div class="tile"><div class="t-left"><div class="t-k">2 vko · 7.9.</div><div class="t-d">50 %: 78,02–78,05</div></div><div class="t-v num">78,04<small> m</small></div></div>
+          <div class="tile"><div class="t-left"><div class="t-k">1 kk · 24.9.</div><div class="t-d">50 %: 77,99–78,07</div></div><div class="t-v num">78,04<small> m</small></div></div>
+          <div class="tile"><div class="t-left"><div class="t-k">3 kk · 24.11.</div><div class="t-d">50 %: 78,10–78,29</div></div><div class="t-v num">78,17<small> m</small></div></div>
+          <div class="tile"><div class="t-left"><div class="t-k">Seur. huippu · kesä 2027</div><div class="t-d">90 %: 78,23–78,88</div></div><div class="t-v num">78,59<small> m</small></div></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- FORECAST FAN -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">Ennuste lähikuukausille</h2>
+        <p class="sec-note">Käyrä on ennusteen keskiarvo; varjostetut alueet kuvaavat vaihteluväliä, jolle taso todennäköisesti asettuu. Vie kursori kuvaajaan lukeaksesi arvot.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="controls" id="fanControls">
+        <button class="chip" data-toggle="b90" aria-pressed="true"><span class="sw" style="background:var(--band-90)"></span>90 %:n väli</button>
+        <button class="chip" data-toggle="b50" aria-pressed="true"><span class="sw" style="background:var(--band-50)"></span>50 %:n väli</button>
+        <button class="chip" data-toggle="refs" aria-pressed="true"><span class="sw" style="background:var(--flood)"></span>Vertailutasot</button>
+        <button class="chip" data-toggle="peak" aria-pressed="true"><span class="sw" style="background:var(--record)"></span>Kesän 2027 huippu</button>
+      </div>
+      <div class="chart-wrap" id="fanWrap">
+        <svg class="chart" id="fanChart" viewBox="0 0 920 430" role="img" aria-label="Päijänteen vedenkorkeuden ennuste epävarmuusvyöhykkeineen"></svg>
+        <div class="tt" id="fanTT"></div>
+      </div>
+      <div class="legend">
+        <span class="li"><span class="swatch line"></span>Ennusteen keskiarvo</span>
+        <span class="li"><span class="swatch" style="background:var(--band-50)"></span>50 %:n todennäköisyys</span>
+        <span class="li"><span class="swatch" style="background:var(--band-90)"></span>90 %:n todennäköisyys</span>
+        <span class="li"><span class="swatch dash"></span>Tulva- ja vertailutasot</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAUGE -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">Vedenkorkeus suhteessa ennätyksiin</h2>
+        <p class="sec-note">Kaikki merkityt tasot ovat Kalkkisten asteikolta, vertailujakso 1970–2025. Täyttö nousee tämän päivän lukemaan.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="gauge-layout">
+        <div style="padding:6px 0"><svg class="chart" id="gauge" viewBox="0 0 260 430" role="img" aria-label="Pystymittari Päijänteen vedenkorkeudesta suhteessa vertailutasoihin"></svg></div>
+        <div class="gauge-notes">
+          <div class="gnote hi"><div class="g-k">Kaikkien aikojen ylin · 79,24 m</div><div class="g-v">Mitattu 30.12.1974 — noin 1,2 m yli nykytason.</div></div>
+          <div class="gnote hi"><div class="g-k">Tulvaraja · 78,80 m</div><div class="g-v">Vahingollinen korkea vesi alkaa tästä; 0,75 m yli nykytason.</div></div>
+          <div class="gnote mid"><div class="g-k">Keskim. vuosimaksimi · 78,65 m</div><div class="g-v">Tyypillisen vuoden kevätkuoppahuippu, keskiarvo 1970–2025.</div></div>
+          <div class="gnote now"><div class="g-k">Tänään · 78,05 m</div><div class="g-v">Matala vesi — vain 2 cm yli alimman mitatun vuosihuipun (78,03 m).</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WATER BALANCE -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">Mikä vedenkorkeuteen vaikuttaa</h2>
+        <p class="sec-note">Järven pinta on vesitaseen tulos: sisään tuleva vesi vähennettynä ulos lähtevällä. Kun tulo ylittää lähdön, pinta nousee — ja päinvastoin.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="balance-grid">
+        <div class="wb-diagram">
+          <svg class="wb-svg chart" viewBox="0 0 470 300" role="img" aria-label="Päijänteen vesitaseen kaavakuva: tulovirtaama, sadanta, haihdunta ja lähtövirtaama">
+            <!-- ground/basin -->
+            <path class="ground" d="M0 300 L0 150 Q0 140 12 140 L150 140 L175 200 L360 200 L385 175 L440 175 L440 300 Z"/>
+            <!-- lake body -->
+            <rect class="lake-2" x="175" y="196" width="185" height="104"/>
+            <rect class="lake" x="175" y="205" width="185" height="95"/>
+            <rect class="lake" x="175" y="200" width="185" height="6" opacity="0.5"/>
+            <!-- inflow arrow (left, into lake) -->
+            <g>
+              <path class="arr-in" stroke-width="10" fill="none" d="M60 175 L150 195"/>
+              <path class="arr-in" d="M150 195 l-16 -8 l3 9 l-8 6 Z"/>
+              <text class="wb-t in" x="30" y="160">Tulovirtaama</text>
+              <text class="wb-s" x="30" y="173">valuma-alueelta</text>
+            </g>
+            <!-- rain arrows (top down) -->
+            <g>
+              <path class="arr-rain" stroke-width="3" fill="none" d="M215 120 L215 150"/><path class="arr-rain" d="M215 152 l-4 -8 l4 2 l4 -2 Z"/>
+              <path class="arr-rain" stroke-width="3" fill="none" d="M245 120 L245 150"/><path class="arr-rain" d="M245 152 l-4 -8 l4 2 l4 -2 Z"/>
+              <text class="wb-t in" x="200" y="112">Sadanta</text>
+            </g>
+            <!-- evaporation arrows (up, dashed) -->
+            <g>
+              <path class="arr-evap" stroke-width="3" fill="none" stroke-dasharray="4 3" d="M300 150 L300 120"/><path class="arr-evap" d="M300 118 l-4 8 l4 -2 l4 2 Z"/>
+              <path class="arr-evap" stroke-width="3" fill="none" stroke-dasharray="4 3" d="M330 150 L330 120"/><path class="arr-evap" d="M330 118 l-4 8 l4 -2 l4 2 Z"/>
+              <text class="wb-t evap" x="286" y="112">Haihdunta</text>
+            </g>
+            <!-- dam + outflow (right) -->
+            <g>
+              <rect class="dam" x="360" y="185" width="8" height="30" rx="1"/>
+              <path class="arr-out" stroke-width="10" fill="none" d="M368 205 L418 220"/>
+              <path class="arr-out" d="M418 220 l-16 -6 l4 8 l-6 6 Z"/>
+              <text class="wb-t out" x="366" y="248">Lähtövirtaama</text>
+              <text class="wb-s" x="366" y="261">Kalkkinen → Kymijoki</text>
+              <text class="wb-s" x="322" y="182">säännöstely</text>
+            </g>
+          </svg>
+          <div class="wb-eq">
+            Pinnan muutos = <b>Tulovirtaama</b> <span class="plus">+</span> <b>Sadanta</b> <span class="minus">−</span> <b>Lähtövirtaama</b> <span class="minus">−</span> <b>Haihdunta</b>
+          </div>
+        </div>
+
+        <div class="factors">
+          <div class="factor" style="--fc:var(--accent)">
+            <h5>Tulovirtaama</h5>
+            <div class="fv">ennustehuippu ≈ 261 m³/s (1.9.)</div>
+            <p>Valuma-alueelta jokia ja puroja pitkin järveen tuleva vesi. Suurin keväällä lumen sulaessa; syksyn sateet kasvattavat sitä uudelleen.</p>
+          </div>
+          <div class="factor" style="--fc:var(--accent)">
+            <h5>Sadanta</h5>
+            <div class="fv">suoraan pinnalle</div>
+            <p>Suoraan järven laajalle pinnalle (1 080 km²) satava vesi. Runsas syyssade nostaa pintaa nopeasti; kuiva kausi laskee sitä.</p>
+          </div>
+          <div class="factor" style="--fc:var(--accent-2)">
+            <h5>Lähtövirtaama</h5>
+            <div class="fv">nyt ≈ 130 m³/s · ka. 250 m³/s</div>
+            <p>Kalkkisten kautta Kymijokeen purkautuva vesi. Kesällä 2026 selvästi keskiarvoa pienempi, mikä hidastaa pinnan laskua.</p>
+          </div>
+          <div class="factor" style="--fc:var(--evap)">
+            <h5>Haihdunta</h5>
+            <div class="fv">suurinta kesällä</div>
+            <p>Järven pinnalta ilmaan haihtuva vesi. Lämpiminä kesäkuukausina haihdunta voi ylittää sadannan ja painaa pintaa alaspäin.</p>
+          </div>
+          <div class="factor" style="--fc:var(--neutral-ref)">
+            <h5>Säännöstely</h5>
+            <div class="fv">luukut suljettu 26.3.2026</div>
+            <p>Kalkkisten padon luukuilla säädetään lähtövirtaamaa. Keväästä 2026 luukut ovat olleet kiinni ja vesi virtaa luontaisesti kosken kautta.</p>
+          </div>
+          <div class="factor" style="--fc:var(--good)">
+            <h5>Lumen sulaminen</h5>
+            <div class="fv">kevättulva</div>
+            <p>Talven aikana kertynyt lumi sulaa keväällä ja tuottaa vuoden suurimman tulovirtaaman — järven vuosihuippu osuu tavallisesti kesäkuulle.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls" style="margin-top:18px"></div>
+      <h3 style="font-family:'Fraunces',serif;font-weight:600;font-size:1.15rem;margin:20px 0 2px">Virtaama Kalkkisissa</h3>
+      <p class="sec-note" style="margin-bottom:8px">Kesällä 2026 lähtövirtaama on ollut selvästi pitkän ajan keskiarvon alapuolella. Vie kursori palkkiin nähdäksesi arvon.</p>
+      <div class="chart-wrap" id="flowWrap">
+        <svg class="chart" id="flowChart" viewBox="0 0 920 340" role="img" aria-label="Virtaamien vertailu Kalkkisissa, m³/s"></svg>
+        <div class="tt" id="flowTT"></div>
+      </div>
+      <div class="legend">
+        <span class="li"><span class="swatch" style="background:var(--accent)"></span>Tulovirtaama</span>
+        <span class="li"><span class="swatch" style="background:var(--accent-2)"></span>Lähtövirtaama nyt</span>
+        <span class="li"><span class="swatch" style="background:var(--neutral-ref)"></span>Vertailuarvot</span>
+        <span class="li"><span class="swatch" style="background:var(--flood)"></span>Ennätys</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEMPERATURE -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">Pintaveden lämpötila — vuodenkierto</h2>
+        <p class="sec-note">Tyypillinen pintaveden lämpötila kuukausittain (pitkän ajan keskiarvo). Varjostettu alue on kuukauden vaihteluväli. Vie kursori käyrään.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="chart-wrap" id="tempWrap">
+        <svg class="chart" id="tempChart" viewBox="0 0 920 380" role="img" aria-label="Päijänteen pintaveden lämpötilan vuodenkierto"></svg>
+        <div class="tt" id="tempTT"></div>
+      </div>
+      <div class="legend">
+        <span class="li"><span class="swatch line" style="border-top-color:var(--temp)"></span>Keskimääräinen lämpötila</span>
+        <span class="li"><span class="swatch" style="background:var(--temp-band)"></span>Vaihteluväli (min–max)</span>
+        <span class="li"><span class="swatch" style="background:var(--accent)"></span>Nyt ~18 °C (elokuu 2026)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">Kaksi mittaria samalla järvellä</h2>
+        <p class="sec-note">Kalkkinen (eteläinen luusua) ja Tehinselkä (keskusallas) seuraavat lähes identtisesti — Päijänne käyttäytyy yhtenä vesialtaana.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="cmp">
+        <div class="stationcard" style="--st:var(--accent)">
+          <h4>Kalkkinen</h4>
+          <div class="sc-sub">Eteläinen luusua · vertailu 1970–2025</div>
+          <div class="scrow big"><span class="lab">Nyt · 24.8.2026</span><span class="val">78,05 m</span></div>
+          <div class="scrow"><span class="lab">3 kk:n ennuste</span><span class="val">78,17 m</span></div>
+          <div class="scrow"><span class="lab">Keskim. vuosimaksimi</span><span class="val">78,65 m</span></div>
+          <div class="scrow"><span class="lab">Ennätyskorkeus</span><span class="val">79,24 m</span></div>
+          <div class="scrow"><span class="lab">Tulvaraja</span><span class="val">78,80 m</span></div>
+        </div>
+        <div class="stationcard" style="--st:var(--accent-2)">
+          <h4>Tehinselkä</h4>
+          <div class="sc-sub">Keskusallas · vertailu 1970–1993</div>
+          <div class="scrow big"><span class="lab">Nyt · 23.8.2026</span><span class="val">78,06 m</span></div>
+          <div class="scrow"><span class="lab">3 kk:n ennuste</span><span class="val">78,17 m</span></div>
+          <div class="scrow"><span class="lab">Keskim. vuosimaksimi</span><span class="val">78,68 m</span></div>
+          <div class="scrow"><span class="lab">Ennätyskorkeus</span><span class="val">79,23 m</span></div>
+          <div class="scrow"><span class="lab">Alin vuosimaksimi</span><span class="val">78,03 m</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FACTS -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">Järvi lukuina</h2>
+        <p class="sec-note">Miksi muutaman sentin heilahdus Päijänteessä merkitsee paljon rantoja laajemmalti.</p>
+      </div>
+    </div>
+    <div class="facts">
+      <div class="fact"><div class="f-v num">1 080<small> km²</small></div><div class="f-k">Pinta-ala — Suomen 2. suurin järvi</div></div>
+      <div class="fact"><div class="f-v num">95,3<small> m</small></div><div class="f-k">Suurin syvyys — Suomen syvin järvi</div></div>
+      <div class="fact"><div class="f-v num">119<small> km</small></div><div class="f-k">Pituus, Jyväskylästä etelään Asikkalaan</div></div>
+      <div class="fact"><div class="f-v">1,5 milj.<small> asukasta</small></div><div class="f-k">Pääkaupunkiseutu juo Päijänteen vettä 120 km:n kalliotunnelia pitkin</div></div>
+    </div>
+    <p class="context-copy">Koska Päijänne-tunneli toimittaa juomaveden pääkaupunkiseudulle ja järvi syöttää alapuolista Kymijokea, sen pintaa seurataan tarkasti. <strong>Nykyinen 78,05 m on noin 60 cm alle tavanomaisen kesähuipun</strong> ja vain pari senttiä yli vuoden 1970 jälkeen mitatun alimman vuosihuipun. Ennusteen mukaan syyssateet ja haihdunnan väheneminen nostavat pintaa vähitellen — noin tasolle 78,17 m marraskuun loppuun mennessä — ja seuraava kevään huippu ajoittuu noin 78,59 metriin keskikesällä 2027.</p>
+  </section>
+
+  <!-- TABLE -->
+  <section>
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">Ennuste numeroina</h2>
+        <p class="sec-note">Kalkkisten asteikon todennäköisyysennuste. Vaihteluvälit ovat tasoja, jotka ennuste odottaa ylittyvän ilmoitetulla todennäköisyydellä.</p>
+      </div>
+      <button class="chip table-toggle" id="tblBtn" aria-pressed="false" aria-controls="tblWrap">Näytä taulukko</button>
+    </div>
+    <div class="tbl-wrap" id="tblWrap" hidden>
+      <table>
+        <thead><tr><th>Aikaväli</th><th>Päivä</th><th>Keskiarvo (m)</th><th>50 %:n väli</th><th>90 %:n väli</th></tr></thead>
+        <tbody>
+          <tr><td>Nyt (havaittu)</td><td>24.8.2026</td><td>78,05</td><td>—</td><td>—</td></tr>
+          <tr><td>+5 vrk</td><td>29.8.2026</td><td>78,04</td><td>78,02–78,06</td><td>78,00–78,10</td></tr>
+          <tr><td>2 viikkoa</td><td>7.9.2026</td><td>78,04</td><td>78,02–78,05</td><td>—</td></tr>
+          <tr><td>~3 viikkoa</td><td>15.9.2026</td><td>78,05</td><td>78,00–78,08</td><td>77,93–78,13</td></tr>
+          <tr><td>1 kuukausi</td><td>24.9.2026</td><td>78,04</td><td>77,99–78,07</td><td>—</td></tr>
+          <tr><td>~7 viikkoa</td><td>15.10.2026</td><td>78,07</td><td>78,00–78,17</td><td>77,84–78,25</td></tr>
+          <tr><td>2 kuukautta</td><td>24.10.2026</td><td>78,08</td><td>78,01–78,13</td><td>—</td></tr>
+          <tr><td>~12 viikkoa</td><td>15.11.2026</td><td>78,17</td><td>78,09–78,28</td><td>77,82–78,35</td></tr>
+          <tr><td>3 kuukautta</td><td>24.11.2026</td><td>78,17</td><td>78,10–78,29</td><td>—</td></tr>
+          <tr><td>Vuosihuippu</td><td>~21.6.2027</td><td>78,59</td><td>78,48–78,65</td><td>78,23–78,88</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div><strong>Lähteet:</strong> Suomen ympäristökeskus (SYKE), Vesistömallijärjestelmä — Päijänne Kalkkinen (l142111001y) ja Tehinselkä (l142211001y) ennuste- ja kuukausikatsaukset. Vertailutilastot: 1970–2025 (Kalkkinen), 1970–1993 (Tehinselkä). Havaittu vedenkorkeus koottu SYKEn kuukausikatsauksista 2023–2026. Pintaveden lämpötila: tyypilliset kuukausittaiset arvot (ilmastollinen vuodenkierto). Järvitiedot: julkiset lähteet.</div>
+    <div class="disclaimer">Tasot ovat metrejä merenpinnan yläpuolella (NN+) nimetyllä asteikolla. Ennustearvot ovat alustavia mallilaskelmia, eivät varmennettuja mittauksia. Tämä sivu on riippumaton havainnollistus julkisesti saatavilla olevasta datasta (haettu 24.8.2026) eikä ole SYKEn virallinen tuote. Rakennettu luettavaksi — koska alkuperäiset kuvaajat eivät sitä olleet.</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var root=document.documentElement,tBtn=document.getElementById('themeBtn'),
+      tLabel=document.getElementById('themeLabel'),tIcon=document.getElementById('themeIcon');
+  var sunPath='<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+  var moonPath='<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+  function currentDark(){var t=root.getAttribute('data-theme');
+    if(t==='dark')return true;if(t==='light')return false;
+    return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;}
+  function syncBtn(){var dk=currentDark();tLabel.textContent=dk?'Vaalea':'Tumma';tIcon.innerHTML=dk?sunPath:moonPath;}
+  tBtn.addEventListener('click',function(){root.setAttribute('data-theme',currentDark()?'light':'dark');syncBtn();renderAll();});
+  if(window.matchMedia){var mq=window.matchMedia('(prefers-color-scheme: dark)');
+    (mq.addEventListener?mq.addEventListener.bind(mq,'change'):mq.addListener.bind(mq))(function(){syncBtn();renderAll();});}
+  syncBtn();
+
+  function cssv(n){return getComputedStyle(root).getPropertyValue(n).trim();}
+  var NS='http://www.w3.org/2000/svg';
+  function el(tag,a,p){var e=document.createElementNS(NS,tag);if(a)for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+  function fi(v,dec){dec=dec==null?2:dec;return v.toFixed(dec).replace('.',',');}
+  var MON=['tammi','helmi','maalis','huhti','touko','kesä','heinä','elo','syys','loka','marras','joulu'];
+  function epoch(y,m,d){return Date.UTC(y,m-1,d);}
+  function ddmmyyyy(ms){var dt=new Date(ms);return dt.getUTCDate()+'.'+(dt.getUTCMonth()+1)+'.'+dt.getUTCFullYear();}
+
+  /* ============ HISTORY ============ */
+  var obsRaw=[
+    [2023,12,78.45],[2024,1,78.40],[2024,2,78.32],[2024,3,78.20],[2024,4,78.09],
+    [2024,8,78.49],[2024,9,78.32],[2024,10,78.28],[2024,11,78.16],[2024,12,78.17],
+    [2025,1,78.23],[2025,3,78.13],[2025,4,78.08],[2025,6,78.46],[2025,7,78.51],
+    [2025,8,78.42],[2025,9,78.19],[2025,10,78.11],[2025,11,77.98],[2025,12,77.93],
+    [2026,1,78.13],[2026,2,78.09],[2026,3,77.96],[2026,4,78.04],[2026,5,78.13],
+    [2026,6,78.13],[2026,7,78.15],[2026,8,78.10]
+  ];
+  var obs=obsRaw.map(function(r){return {ms:epoch(r[0],r[1],1),v:r[2],y:r[0],m:r[1]};});
+  obs.push({ms:epoch(2026,8,24),v:78.05,y:2026,m:8,now:true});
+  var histRefs=[
+    {v:78.80,label:'Tulvaraja 78,80',color:'--flood',dash:'6 4'},
+    {v:78.65,label:'Keskim. vuosimaksimi 78,65',color:'--neutral-ref',dash:'2 4'},
+    {v:78.03,label:'Alin vuosihuippu 78,03',color:'--muted',dash:'2 4'}
+  ];
+  var histAnn=[
+    {ms:epoch(2025,7,1),v:78.51,txt:'Kesähuippu 78,51',dy:-14,anc:'middle'},
+    {ms:epoch(2025,12,1),v:77.93,txt:'Alin 77,93',dy:20,anc:'middle'},
+    {ms:epoch(2026,8,24),v:78.05,txt:'Nyt 78,05',dy:20,anc:'end'}
+  ];
+  var regClose=epoch(2026,3,26);
+  var histShow={hrefs:true,hann:true};
+
+  var histSvg=document.getElementById('histChart'),histWrap=document.getElementById('histWrap'),histTT=document.getElementById('histTT');
+  var HW=920,HH=400,HM={t:22,r:22,b:38,l:50};
+  var hxmin=obs[0].ms,hxmax=obs[obs.length-1].ms;
+  var hymin=77.85,hymax=78.9;
+  function HX(ms){return HM.l+(ms-hxmin)/(hxmax-hxmin)*(HW-HM.l-HM.r);}
+  function HY(v){return HM.t+(hymax-v)/(hymax-hymin)*(HH-HM.t-HM.b);}
+
+  function renderHist(){
+    histSvg.innerHTML='';
+    var acc=cssv('--accent');
+    // y grid
+    [77.9,78.1,78.3,78.5,78.7].forEach(function(v){
+      el('line',{x1:HM.l,y1:HY(v),x2:HW-HM.r,y2:HY(v),stroke:cssv('--line'),'stroke-width':1},histSvg);
+      var t=el('text',{x:HM.l-9,y:HY(v)+4,'text-anchor':'end','font-size':11,fill:cssv('--muted'),'font-family':'IBM Plex Mono, monospace'},histSvg);
+      t.textContent=fi(v,1);
+    });
+    // year ticks
+    [2024,2025,2026].forEach(function(y){
+      [1,7].forEach(function(mo){
+        var ms=epoch(y,mo,1);if(ms<hxmin||ms>hxmax)return;
+        el('line',{x1:HX(ms),y1:HM.t,x2:HX(ms),y2:HH-HM.b,stroke:cssv('--line'),'stroke-width':1,'stroke-dasharray':'1 5'},histSvg);
+        var t=el('text',{x:HX(ms),y:HH-HM.b+18,'text-anchor':'middle','font-size':11,fill:cssv('--muted')},histSvg);
+        t.textContent=(mo===1?'1/':'7/')+y;
+      });
+    });
+    // refs
+    if(histShow.hrefs){
+      histRefs.forEach(function(r){var y=HY(r.v);if(y<HM.t||y>HH-HM.b)return;
+        el('line',{x1:HM.l,y1:y,x2:HW-HM.r,y2:y,stroke:cssv(r.color),'stroke-width':1.5,'stroke-dasharray':r.dash,opacity:.9},histSvg);
+        var tw=r.label.length*5.6+14;
+        el('rect',{x:HM.l+6,y:y-16,width:tw,height:14,rx:4,fill:cssv('--surface'),opacity:.86},histSvg);
+        var t=el('text',{x:HM.l+13,y:y-5,'text-anchor':'start','font-size':10.5,fill:cssv(r.color),'font-weight':600},histSvg);
+        t.textContent=r.label;
+      });
+    }
+    // regulation-closed vertical marker
+    if(histShow.hann){
+      el('line',{x1:HX(regClose),y1:HM.t,x2:HX(regClose),y2:HH-HM.b,stroke:cssv('--neutral-ref'),'stroke-width':1.4,'stroke-dasharray':'5 4',opacity:.75},histSvg);
+      var rt=el('text',{x:HX(regClose)+5,y:HM.t+12,'font-size':10,fill:cssv('--neutral-ref'),'font-weight':600},histSvg);
+      rt.textContent='Luukut kiinni 26.3.2026';
+    }
+    // line with gaps (>75 days => break)
+    var dstr='';
+    for(var i=0;i<obs.length;i++){
+      var p=obs[i];
+      if(i>0 && (p.ms-obs[i-1].ms)>75*86400000){dstr+='M'+HX(p.ms)+' '+HY(p.v)+' ';}
+      else{dstr+=(i?'L':'M')+HX(p.ms)+' '+HY(p.v)+' ';}
+    }
+    el('path',{d:dstr,fill:'none',stroke:acc,'stroke-width':2.4,'stroke-linejoin':'round','stroke-linecap':'round'},histSvg);
+    // gap hint (2024 summer)
+    var gA=obs[4],gB=obs[5];
+    el('path',{d:'M'+HX(gA.ms)+' '+HY(gA.v)+'L'+HX(gB.ms)+' '+HY(gB.v),fill:'none',stroke:acc,'stroke-width':1.2,'stroke-dasharray':'2 5',opacity:.4},histSvg);
+    // points
+    obs.forEach(function(p){
+      el('circle',{cx:HX(p.ms),cy:HY(p.v),r:p.now?5:2.6,fill:p.now?cssv('--obs'):acc,stroke:p.now?cssv('--surface'):'none','stroke-width':p.now?2:0},histSvg);
+    });
+    // annotations
+    if(histShow.hann){
+      histAnn.forEach(function(a){
+        var x=HX(a.ms),y=HY(a.v);
+        var t=el('text',{x:x,y:y+a.dy,'text-anchor':a.anc,'font-size':11,'font-weight':700,fill:a.txt.indexOf('Nyt')>=0?cssv('--obs'):cssv('--record')},histSvg);
+        t.textContent=a.txt;
+      });
+    }
+    // hover overlay
+    var ov=el('rect',{x:HM.l,y:HM.t,width:HW-HM.l-HM.r,height:HH-HM.t-HM.b,fill:'transparent',style:'cursor:crosshair'},histSvg);
+    function handle(ev){
+      var pt=relX(histSvg,ev,HW);
+      // nearest obs by x
+      var best=null,bd=1e9;
+      obs.forEach(function(p){var d=Math.abs(HX(p.ms)-pt);if(d<bd){bd=d;best=p;}});
+      if(best){hHi(best);hTip(best);}
+    }
+    ov.addEventListener('mousemove',handle);
+    ov.addEventListener('mouseleave',function(){histTT.classList.remove('on');if(hhl){hhl.remove();hhl=null;}});
+    ov.addEventListener('touchstart',function(e){e.preventDefault();handle(e.touches[0]);},{passive:false});
+    ov.addEventListener('touchmove',function(e){e.preventDefault();handle(e.touches[0]);},{passive:false});
+  }
+  var hhl=null;
+  function hHi(p){if(hhl)hhl.remove();hhl=el('circle',{cx:HX(p.ms),cy:HY(p.v),r:5,fill:cssv('--accent'),stroke:cssv('--surface'),'stroke-width':2},histSvg);}
+  function hTip(p){
+    var lab=p.now?'24.8.2026':(MON[p.m-1]+'kuu '+p.y);
+    var html='<div class="tt-date">'+lab+(p.now?' · nyt':'')+'</div>';
+    html+='<div class="tt-row"><span>Vedenkorkeus</span><span class="tt-mean">'+fi(p.v)+' m</span></div>';
+    histTT.innerHTML=html;placeTip(histSvg,histWrap,histTT,HX(p.ms),HY(p.v),HW,HH);
+  }
+
+  /* ============ FORECAST FAN ============ */
+  function d(y,m,day){return (epoch(y,m,day)-epoch(2026,8,24))/86400000;}
+  var fan=[
+    {t:d(2026,8,24),mean:78.05,obs:true},
+    {t:d(2026,8,29),mean:78.04,p25:78.02,p75:78.06,p5:78.00,p95:78.10},
+    {t:d(2026,9,15),mean:78.05,p25:78.00,p75:78.08,p5:77.93,p95:78.13},
+    {t:d(2026,10,15),mean:78.07,p25:78.00,p75:78.17,p5:77.84,p95:78.25},
+    {t:d(2026,11,15),mean:78.17,p25:78.09,p75:78.28,p5:77.82,p95:78.35}
+  ];
+  var peak={t:d(2027,6,21),mean:78.59,p25:78.48,p75:78.65,p5:78.23,p95:78.88,dateLabel:'~21.6.2027'};
+  var refs=[{v:78.80,label:'Tulvaraja 78,80',color:'--flood',dash:'6 4'},{v:78.65,label:'Keskim. vuosimaksimi 78,65',color:'--neutral-ref',dash:'2 4'}];
+  var monthTicks=[{t:d(2026,9,1),l:'syys'},{t:d(2026,10,1),l:'loka'},{t:d(2026,11,1),l:'marras'},{t:d(2026,12,1),l:'joulu'},{t:d(2027,1,1),l:'1/27'},{t:d(2027,3,1),l:'maalis'},{t:d(2027,5,1),l:'touko'},{t:d(2027,7,1),l:'heinä'}];
+  var show={b90:true,b50:true,refs:true,peak:true};
+  var fanSvg=document.getElementById('fanChart'),fanWrap=document.getElementById('fanWrap'),fanTT=document.getElementById('fanTT');
+  var VW=920,VH=430,M={t:24,r:20,b:40,l:52};
+  var xmin=fan[0].t,xmax=peak.t,ymin=77.72,ymax=78.98;
+  function X(t){return M.l+(t-xmin)/(xmax-xmin)*(VW-M.l-M.r);}
+  function Y(v){return M.t+(ymax-v)/(ymax-ymin)*(VH-M.t-M.b);}
+  function areaPath(pts,lo,hi){var u='',dn='';pts.forEach(function(p,i){u+=(i?'L':'M')+X(p.t)+' '+Y(p[hi])+' ';});for(var i=pts.length-1;i>=0;i--)dn+='L'+X(pts[i].t)+' '+Y(pts[i][lo])+' ';return u+dn+'Z';}
+  function linePath(pts,k){var s='';pts.forEach(function(p,i){s+=(i?'L':'M')+X(p.t)+' '+Y(p[k])+' ';});return s;}
+  function renderFan(){
+    fanSvg.innerHTML='';
+    var band=fan.filter(function(p){return p.p5!=null;});
+    band.unshift({t:fan[0].t,p5:fan[0].mean,p95:fan[0].mean,p25:fan[0].mean,p75:fan[0].mean});
+    var mean=cssv('--mean-line'),obsC=cssv('--obs');
+    [77.8,78.0,78.2,78.4,78.6,78.8].forEach(function(v){
+      el('line',{x1:M.l,y1:Y(v),x2:VW-M.r,y2:Y(v),stroke:cssv('--line'),'stroke-width':1},fanSvg);
+      var t=el('text',{x:M.l-9,y:Y(v)+4,'text-anchor':'end','font-size':11,fill:cssv('--muted'),'font-family':'IBM Plex Mono, monospace'},fanSvg);t.textContent=fi(v,1);
+    });
+    monthTicks.forEach(function(mt){if(mt.t<xmin-2||mt.t>xmax+2)return;
+      el('line',{x1:X(mt.t),y1:M.t,x2:X(mt.t),y2:VH-M.b,stroke:cssv('--line'),'stroke-width':1,'stroke-dasharray':'1 5'},fanSvg);
+      var t=el('text',{x:X(mt.t),y:VH-M.b+18,'text-anchor':'middle','font-size':11,fill:cssv('--muted')},fanSvg);t.textContent=mt.l;});
+    el('path',{d:'M'+X(fan[fan.length-1].t)+' '+Y(fan[fan.length-1].mean)+'L'+X(peak.t)+' '+Y(peak.mean),fill:'none',stroke:mean,'stroke-width':1.5,'stroke-dasharray':'2 5',opacity:.55},fanSvg);
+    if(show.b90)el('path',{d:areaPath(band,'p5','p95'),fill:cssv('--band-90')},fanSvg);
+    if(show.b50)el('path',{d:areaPath(band,'p25','p75'),fill:cssv('--band-50')},fanSvg);
+    el('path',{d:linePath(fan,'mean'),fill:'none',stroke:mean,'stroke-width':2.5,'stroke-linecap':'round','stroke-linejoin':'round'},fanSvg);
+    if(show.refs)refs.forEach(function(r){var y=Y(r.v);if(y<M.t||y>VH-M.b)return;
+      el('line',{x1:M.l,y1:y,x2:VW-M.r,y2:y,stroke:cssv(r.color),'stroke-width':1.6,'stroke-dasharray':r.dash,opacity:.9},fanSvg);
+      var tw=r.label.length*5.6+14;
+      el('rect',{x:M.l+6,y:y-16,width:tw,height:14,rx:4,fill:cssv('--surface'),opacity:.86},fanSvg);
+      var t=el('text',{x:M.l+13,y:y-5,'text-anchor':'start','font-size':10.5,fill:cssv(r.color),'font-weight':600},fanSvg);t.textContent=r.label;});
+    if(show.peak){var px=X(peak.t);
+      el('line',{x1:px,y1:Y(peak.p5),x2:px,y2:Y(peak.p95),stroke:cssv('--record'),'stroke-width':2},fanSvg);
+      [peak.p5,peak.p95].forEach(function(v){el('line',{x1:px-5,y1:Y(v),x2:px+5,y2:Y(v),stroke:cssv('--record'),'stroke-width':2},fanSvg);});
+      el('circle',{cx:px,cy:Y(peak.mean),r:5.5,fill:cssv('--record'),stroke:cssv('--surface'),'stroke-width':2},fanSvg);
+      el('rect',{x:px-140,y:Y(peak.mean)-24,width:128,height:30,rx:5,fill:cssv('--surface'),opacity:.86},fanSvg);
+      var a1=el('text',{x:px-12,y:Y(peak.mean)-10,'text-anchor':'end','font-size':11.5,'font-weight':700,fill:cssv('--record')},fanSvg);a1.textContent='Kesän 2027 huippu · 78,59';
+      var a2=el('text',{x:px-12,y:Y(peak.mean)+3,'text-anchor':'end','font-size':10.5,fill:cssv('--muted')},fanSvg);a2.textContent=peak.dateLabel;}
+    el('circle',{cx:X(fan[0].t),cy:Y(fan[0].mean),r:5.5,fill:obsC,stroke:cssv('--surface'),'stroke-width':2},fanSvg);
+    var nt=el('text',{x:X(fan[0].t)+9,y:Y(fan[0].mean)+16,'font-size':11.5,'font-weight':700,fill:obsC},fanSvg);nt.textContent='Nyt 78,05';
+    fan.concat([peak]).forEach(function(p){var c=el('circle',{cx:X(p.t),cy:Y(p.mean),r:14,fill:'transparent',style:'cursor:pointer'},fanSvg);
+      c.addEventListener('mouseenter',function(){fTip(p);fHi(p);});c.addEventListener('mousemove',function(){fTip(p);});
+      c.addEventListener('mouseleave',fHide);c.addEventListener('touchstart',function(e){e.preventDefault();fTip(p);fHi(p);},{passive:false});});
+    fanSvg.addEventListener('mouseleave',fHide);
+  }
+  var fhl=null;function fHi(p){if(fhl)fhl.remove();fhl=el('circle',{cx:X(p.t),cy:Y(p.mean),r:5,fill:cssv('--mean-line'),stroke:cssv('--surface'),'stroke-width':2},fanSvg);}
+  function fmt(v){return v==null?'—':fi(v);}
+  function fanDate(t){return ddmmyyyy(epoch(2026,8,24)+t*86400000);}
+  function fTip(p){var html='<div class="tt-date">'+(p.dateLabel?p.dateLabel:fanDate(p.t))+(p.obs?' · havaittu':'')+'</div>';
+    html+='<div class="tt-row"><span>Keskiarvo</span><span class="tt-mean">'+fmt(p.mean)+' m</span></div>';
+    if(p.p25!=null)html+='<div class="tt-row"><span>50 %:n väli</span><b>'+fmt(p.p25)+'–'+fmt(p.p75)+'</b></div>';
+    if(p.p5!=null)html+='<div class="tt-row"><span>90 %:n väli</span><b>'+fmt(p.p5)+'–'+fmt(p.p95)+'</b></div>';
+    fanTT.innerHTML=html;placeTip(fanSvg,fanWrap,fanTT,X(p.t),Y(p.mean),VW,VH);}
+  function fHide(){fanTT.classList.remove('on');if(fhl){fhl.remove();fhl=null;}}
+
+  /* ============ FLOWS ============ */
+  var flows=[
+    {label:'Lähtövirtaama nyt (elokuu 2026)',v:130,c:'--accent-2',note:'≈ luontainen virtaama'},
+    {label:'Heinäkuun 2026 keskiarvo',v:121,c:'--accent-2',note:'lähtövirtaama'},
+    {label:'Tulovirtaama, ennustehuippu (~1.9.)',v:261,c:'--accent',note:'vaihteluväli 143–406'},
+    {label:'Lähtövirtaama, pitkän ajan ka.',v:250,c:'--neutral-ref',note:'heinäkuun tyypillinen'},
+    {label:'Keskim. vuosimaksimi 1970–2025',v:355,c:'--neutral-ref',note:'lähtövirtaama'},
+    {label:'Suurin havaittu (18.1.1975)',v:535,c:'--flood',note:'lähtövirtaama'}
+  ];
+  var flowSvg=document.getElementById('flowChart'),flowWrap=document.getElementById('flowWrap'),flowTT=document.getElementById('flowTT');
+  var FW=920,FH=340,FM={t:10,r:60,b:34,l:250};
+  var fmax=560;
+  function FX(v){return FM.l+v/fmax*(FW-FM.l-FM.r);}
+  function renderFlows(){
+    flowSvg.innerHTML='';
+    var n=flows.length,gap=10,bh=(FH-FM.t-FM.b-gap*(n-1))/n;
+    // x grid
+    [0,100,200,300,400,500].forEach(function(gv){
+      el('line',{x1:FX(gv),y1:FM.t,x2:FX(gv),y2:FH-FM.b,stroke:cssv('--line'),'stroke-width':1},flowSvg);
+      var t=el('text',{x:FX(gv),y:FH-FM.b+18,'text-anchor':'middle','font-size':10.5,fill:cssv('--muted'),'font-family':'IBM Plex Mono, monospace'},flowSvg);t.textContent=gv;
+    });
+    el('text',{x:(FM.l+FW-FM.r)/2,y:FH-FM.b+32,'text-anchor':'middle','font-size':10.5,fill:cssv('--muted')},flowSvg).textContent='m³/s';
+    flows.forEach(function(f,i){
+      var y=FM.t+i*(bh+gap),c=cssv(f.c);
+      el('rect',{x:FM.l,y:y,width:FX(f.v)-FM.l,height:bh,rx:5,fill:c,opacity:.92,style:'cursor:pointer'},flowSvg)
+        .addEventListener('mouseenter',(function(ff,yy){return function(){flTip(ff,yy+bh/2);};})(f,y));
+      // label
+      var lt=el('text',{x:FM.l-12,y:y+bh/2-1,'text-anchor':'end','font-size':11.5,fill:cssv('--ink'),'font-weight':600},flowSvg);lt.textContent=f.label;
+      var ls=el('text',{x:FM.l-12,y:y+bh/2+13,'text-anchor':'end','font-size':10,fill:cssv('--muted')},flowSvg);ls.textContent=f.note;
+      // value
+      var vt=el('text',{x:FX(f.v)+8,y:y+bh/2+4,'font-size':12,fill:cssv('--ink'),'font-weight':700,'font-family':'IBM Plex Mono, monospace'},flowSvg);vt.textContent=f.v;
+    });
+    flowSvg.addEventListener('mouseleave',function(){flowTT.classList.remove('on');});
+  }
+  function flTip(f,cy){flowTT.innerHTML='<div class="tt-date">'+f.label+'</div><div class="tt-row"><span>'+f.note+'</span><b>'+f.v+' m³/s</b></div>';
+    placeTip(flowSvg,flowWrap,flowTT,FX(f.v),cy,FW,FH);}
+
+  /* ============ GAUGE ============ */
+  var gauge=document.getElementById('gauge');
+  var gTop=30,gBot=400,gx=92,gw=46,glo=77.75,ghi=79.35;
+  function GY(v){return gBot-(v-glo)/(ghi-glo)*(gBot-gTop);}
+  var gmarks=[
+    {v:79.24,l:'Ennätyskorkeus',c:'--flood'},{v:78.80,l:'Tulvaraja',c:'--flood'},
+    {v:78.65,l:'Keskim. vuosimaksimi',c:'--record'},{v:78.05,l:'Tänään',c:'--accent',now:true}
+  ];
+  function renderGauge(){
+    gauge.innerHTML='';
+    el('rect',{x:gx,y:gTop,width:gw,height:gBot-gTop,rx:14,fill:cssv('--surface-2'),stroke:cssv('--line'),'stroke-width':1},gauge);
+    var defs=el('defs',{},gauge),lg=el('linearGradient',{id:'gg',x1:0,y1:0,x2:0,y2:1},defs);
+    el('stop',{offset:'0%','stop-color':cssv('--accent')},lg);el('stop',{offset:'100%','stop-color':cssv('--accent'),'stop-opacity':.55},lg);
+    var ft=GY(78.05);
+    el('rect',{x:gx,y:ft,width:gw,height:gBot-ft,rx:14,fill:'url(#gg)'},gauge);
+    el('rect',{x:gx,y:ft-1,width:gw,height:3,fill:cssv('--obs')},gauge);
+    gmarks.forEach(function(m){var y=GY(m.v),c=cssv(m.c),now=m.now;
+      el('line',{x1:now?gx-8:gx+gw,y1:y,x2:gx+gw+16,y2:y,stroke:c,'stroke-width':now?2.4:1.4,'stroke-dasharray':now?'':'3 3'},gauge);
+      if(now)el('circle',{cx:gx-8,cy:y,r:4.5,fill:c,stroke:cssv('--surface'),'stroke-width':2},gauge);
+      var t=el('text',{x:gx+gw+22,y:y-2,'font-size':now?12.5:11.5,'font-weight':now?700:600,fill:now?c:cssv('--ink')},gauge);t.textContent=fi(m.v)+' m';
+      var l=el('text',{x:gx+gw+22,y:y+11,'font-size':10.5,fill:cssv('--muted')},gauge);l.textContent=m.l;});
+    el('text',{x:gx+gw/2,y:gBot+22,'text-anchor':'middle','font-size':10.5,fill:cssv('--muted')},gauge).textContent='metriä merenpinnasta (NN+)';
+  }
+
+  /* ============ shared helpers ============ */
+  function relX(svg,ev,vw){var r=svg.getBoundingClientRect();return (ev.clientX-r.left)/r.width*vw;}
+  function placeTip(svg,wrap,tt,vx,vy,vw,vh){
+    var r=svg.getBoundingClientRect(),wr=wrap.getBoundingClientRect();
+    var sx=r.width/vw,sy=r.height/vh;
+    var px=(r.left-wr.left)+vx*sx,py=(r.top-wr.top)+vy*sy;
+    tt.classList.add('on');var tw=tt.offsetWidth,th=tt.offsetHeight;
+    var left=px+16;if(left+tw>wr.width)left=px-tw-16;if(left<0)left=6;
+    var top=py-th-12;if(top<0)top=py+16;
+    tt.style.left=left+'px';tt.style.top=top+'px';
+  }
+
+  /* ============ controls ============ */
+  document.getElementById('histControls').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;
+    var k=b.getAttribute('data-toggle');histShow[k]=!(b.getAttribute('aria-pressed')==='true');b.setAttribute('aria-pressed',histShow[k]?'true':'false');renderHist();});
+  document.getElementById('fanControls').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;
+    var k=b.getAttribute('data-toggle');show[k]=!(b.getAttribute('aria-pressed')==='true');b.setAttribute('aria-pressed',show[k]?'true':'false');renderFan();});
+  var tblBtn=document.getElementById('tblBtn'),tblWrap=document.getElementById('tblWrap');
+  tblBtn.addEventListener('click',function(){var open=tblWrap.hasAttribute('hidden');
+    if(open){tblWrap.removeAttribute('hidden');tblBtn.setAttribute('aria-pressed','true');tblBtn.textContent='Piilota taulukko';}
+    else{tblWrap.setAttribute('hidden','');tblBtn.setAttribute('aria-pressed','false');tblBtn.textContent='Näytä taulukko';}});
+
+  /* ============ TEMPERATURE ============ */
+  var tempData=[
+    {m:1,mn:0,av:2,mx:5},{m:2,mn:0,av:2,mx:5},{m:3,mn:0,av:2,mx:5},{m:4,mn:0,av:3,mx:6},
+    {m:5,mn:5,av:12,mx:18},{m:6,mn:11,av:17,mx:22},{m:7,mn:14,av:20,mx:25},{m:8,mn:14,av:20,mx:25},
+    {m:9,mn:10,av:15,mx:21},{m:10,mn:4,av:8,mx:11},{m:11,mn:2,av:6,mx:9},{m:12,mn:0,av:2,mx:5}
+  ];
+  var tempNow={m:8.75,v:17.9};
+  var MONS=['tammi','helmi','maalis','huhti','touko','kesä','heinä','elo','syys','loka','marras','joulu'];
+  var MON3=['T','H','M','H','T','K','H','E','S','L','M','J'];
+  var tempSvg=document.getElementById('tempChart'),tempWrap=document.getElementById('tempWrap'),tempTT=document.getElementById('tempTT');
+  var TW=920,TH=380,TM={t:18,r:20,b:38,l:42};
+  function TX(m){return TM.l+(m-1)/11*(TW-TM.l-TM.r);}
+  function TY(v){return TM.t+(26-v)/26*(TH-TM.t-TM.b);}
+  function renderTemp(){
+    tempSvg.innerHTML='';
+    var tc=cssv('--temp');
+    // ice band Dec-Apr backdrop
+    el('rect',{x:TX(1),y:TM.t,width:TX(4)-TX(1),height:TH-TM.t-TM.b,fill:cssv('--accent'),opacity:.05},tempSvg);
+    var ib=el('text',{x:(TX(1)+TX(4))/2,y:TM.t+14,'text-anchor':'middle','font-size':10.5,fill:cssv('--muted')},tempSvg);ib.textContent='jääpeite tavallisesti joulu–huhtikuu';
+    // y grid
+    [0,5,10,15,20,25].forEach(function(v){
+      el('line',{x1:TM.l,y1:TY(v),x2:TW-TM.r,y2:TY(v),stroke:cssv('--line'),'stroke-width':1},tempSvg);
+      var t=el('text',{x:TM.l-9,y:TY(v)+4,'text-anchor':'end','font-size':11,fill:cssv('--muted'),'font-family':'IBM Plex Mono, monospace'},tempSvg);t.textContent=v+'°';
+    });
+    // x labels
+    tempData.forEach(function(p){
+      var t=el('text',{x:TX(p.m),y:TH-TM.b+18,'text-anchor':'middle','font-size':11,fill:cssv('--muted')},tempSvg);t.textContent=MON3[p.m-1];
+    });
+    // band
+    var up='',dn='';
+    tempData.forEach(function(p,i){up+=(i?'L':'M')+TX(p.m)+' '+TY(p.mx)+' ';});
+    for(var i=tempData.length-1;i>=0;i--)dn+='L'+TX(tempData[i].m)+' '+TY(tempData[i].mn)+' ';
+    el('path',{d:up+dn+'Z',fill:cssv('--temp-band'),stroke:'none'},tempSvg);
+    // avg line
+    var ln='';tempData.forEach(function(p,i){ln+=(i?'L':'M')+TX(p.m)+' '+TY(p.av)+' ';});
+    el('path',{d:ln,fill:'none',stroke:tc,'stroke-width':2.6,'stroke-linecap':'round','stroke-linejoin':'round'},tempSvg);
+    tempData.forEach(function(p){el('circle',{cx:TX(p.m),cy:TY(p.av),r:2.6,fill:tc},tempSvg);});
+    // current marker
+    var acc=cssv('--accent');
+    el('circle',{cx:TX(tempNow.m),cy:TY(tempNow.v),r:5.5,fill:acc,stroke:cssv('--surface'),'stroke-width':2},tempSvg);
+    var nt=el('text',{x:TX(tempNow.m)-9,y:TY(tempNow.v)-9,'text-anchor':'end','font-size':11.5,'font-weight':700,fill:acc},tempSvg);nt.textContent='Nyt ~18°';
+    // hover
+    var ov=el('rect',{x:TM.l,y:TM.t,width:TW-TM.l-TM.r,height:TH-TM.t-TM.b,fill:'transparent',style:'cursor:crosshair'},tempSvg);
+    function handle(ev){var px=relX(tempSvg,ev,TW);var mm=Math.round((px-TM.l)/(TW-TM.l-TM.r)*11+1);mm=Math.max(1,Math.min(12,mm));var p=tempData[mm-1];tHi(p);tTip(p);}
+    ov.addEventListener('mousemove',handle);ov.addEventListener('mouseleave',function(){tempTT.classList.remove('on');if(thl){thl.remove();thl=null;}});
+    ov.addEventListener('touchstart',function(e){e.preventDefault();handle(e.touches[0]);},{passive:false});
+    ov.addEventListener('touchmove',function(e){e.preventDefault();handle(e.touches[0]);},{passive:false});
+  }
+  var thl=null;function tHi(p){if(thl)thl.remove();thl=el('circle',{cx:TX(p.m),cy:TY(p.av),r:5,fill:cssv('--temp'),stroke:cssv('--surface'),'stroke-width':2},tempSvg);}
+  function tTip(p){tempTT.innerHTML='<div class="tt-date">'+MONS[p.m-1]+'kuu</div>'+
+    '<div class="tt-row"><span>Keskiarvo</span><span class="tt-mean" style="color:var(--temp)">'+p.av+' °C</span></div>'+
+    '<div class="tt-row"><span>Vaihteluväli</span><b>'+p.mn+'–'+p.mx+' °C</b></div>';
+    placeTip(tempSvg,tempWrap,tempTT,TX(p.m),TY(p.av),TW,TH);}
+
+  /* ============ HERO WATER ANIMATION ============ */
+  var updateWaterColors=null;
+  function h2r(h){h=(h||'#000').replace('#','').trim();if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];return [parseInt(h.slice(0,2),16)||0,parseInt(h.slice(2,4),16)||0,parseInt(h.slice(4,6),16)||0];}
+  function rgba(h,a){var c=h2r(h);return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')';}
+  function mixc(h1,h2,t){var a=h2r(h1),b=h2r(h2);return 'rgb('+Math.round(a[0]+(b[0]-a[0])*t)+','+Math.round(a[1]+(b[1]-a[1])*t)+','+Math.round(a[2]+(b[2]-a[2])*t)+')';}
+  function initWater(){
+    var c=document.getElementById('heroWater');if(!c)return;var ctx=c.getContext('2d');
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var pal={};
+    function pick(){pal.accent=cssv('--accent');pal.surface=cssv('--surface');pal.deep=cssv('--obs');}
+    pick();updateWaterColors=function(){pick();if(reduce)draw(0);};
+    var W=0,H=0,dpr=1;
+    function size(){dpr=Math.min(window.devicePixelRatio||1,2);var r=c.getBoundingClientRect();W=r.width;H=r.height;c.width=Math.max(1,W*dpr);c.height=Math.max(1,H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);}
+    function draw(t){
+      if(!W||!H)return;
+      var g=ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0,pal.surface);g.addColorStop(1,mixc(pal.surface,pal.accent,0.22));
+      ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+      var layers=[{a:9,l:230,s:0.5,y:H*0.5,o:0.10},{a:13,l:320,s:0.35,y:H*0.66,o:0.11},{a:17,l:440,s:0.22,y:H*0.82,o:0.13}];
+      layers.forEach(function(L,i){
+        ctx.beginPath();ctx.moveTo(0,H);
+        for(var x=0;x<=W;x+=10){
+          var y=L.y+Math.sin((x/L.l)+(t*0.0006*L.s)+i*1.3)*L.a+Math.sin((x/(L.l*0.5))+(t*0.0011*L.s))*L.a*0.4;
+          ctx.lineTo(x,y);
+        }
+        ctx.lineTo(W,H);ctx.closePath();
+        ctx.fillStyle=rgba(pal.accent,L.o);ctx.fill();
+      });
+      // shimmer highlights
+      ctx.fillStyle=rgba(pal.deep,0.05);
+      for(var k=0;k<3;k++){var yy=H*(0.55+k*0.13)+Math.sin(t*0.001+k)*6;ctx.fillRect(0,yy,W,1.5);}
+      // left scrim for legibility
+      var s=ctx.createLinearGradient(0,0,W,0);
+      s.addColorStop(0,rgba(pal.surface,0.94));s.addColorStop(0.5,rgba(pal.surface,0.45));s.addColorStop(1,rgba(pal.surface,0.05));
+      ctx.fillStyle=s;ctx.fillRect(0,0,W,H);
+      var s2=ctx.createLinearGradient(0,0,0,H);
+      s2.addColorStop(0,rgba(pal.surface,0.55));s2.addColorStop(0.45,rgba(pal.surface,0));
+      ctx.fillStyle=s2;ctx.fillRect(0,0,W,H);
+    }
+    size();
+    var raf=null;
+    function loop(t){draw(t);raf=requestAnimationFrame(loop);}
+    window.addEventListener('resize',function(){size();if(reduce)draw(0);});
+    if(reduce){draw(0);}else{raf=requestAnimationFrame(loop);}
+  }
+
+  /* ============ render + init ============ */
+  function renderAll(){renderHist();renderFan();renderFlows();renderGauge();renderTemp();if(updateWaterColors)updateWaterColors();}
+  renderAll();
+  initWater();
+})();
+</script>
+</body>
+</html>
